@@ -13,6 +13,12 @@ extension Double {
     }()
 
     func toDurationString() -> String {
+        if (self.isNaN) {
+            return ""
+        }
+        if (self.isInfinite) {
+            return ""
+        }
         return Double.durationStringFormatter.string(from: Double(self)) ?? ""
     }
 }

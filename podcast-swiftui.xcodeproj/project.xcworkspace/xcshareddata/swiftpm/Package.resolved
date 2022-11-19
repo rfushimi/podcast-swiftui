@@ -1,0 +1,25 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "SyndiKit",
+        "repositoryURL": "https://github.com/brightdigit/SyndiKit",
+        "state": {
+          "branch": null,
+          "revision": "5022daf2379cd81f9bd80b6b60f4d1356ab0d256",
+          "version": "0.2.0"
+        }
+      },
+      {
+        "package": "XMLCoder",
+        "repositoryURL": "https://github.com/MaxDesiatov/XMLCoder",
+        "state": {
+          "branch": null,
+          "revision": "f30119af03996939cc4f54e0bf0dda9f88a84da5",
+          "version": "0.13.1"
+        }
+      }
+    ]
+  },
+  "version": 1
+}

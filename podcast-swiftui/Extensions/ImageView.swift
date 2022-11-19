@@ -9,15 +9,24 @@ import SwiftUI
 
 struct UrlImageView: View {
     @ObservedObject var urlImageModel: UrlImageModel
+    @Binding var imageURL: URL?
 
-    init(urlString: String?) {
-        urlImageModel = UrlImageModel(urlString: urlString)
+    init(imageURL: Binding<URL?>) {
+        self._imageURL = imageURL
+        if let url = imageURL.wrappedValue {
+            self.urlImageModel = UrlImageModel(url: url)
+        } else {
+            self.urlImageModel = UrlImageModel(url: nil)
+        }
     }
 
     var body: some View {
         Image(uiImage: urlImageModel.image ?? UrlImageView.defaultImage!)
             .resizable()
-            .scaledToFit()
+//            .scaledToFit()
+//            .onChange(of: url) {
+//                self.urlImageModel =  UrlImageModel(url: self.$url.wrappedValue.absoluteURL)
+//            }
     }
 
     static var defaultImage = UIImage(named: "artwork.png")
@@ -25,10 +34,10 @@ struct UrlImageView: View {
 
 class UrlImageModel: ObservableObject {
     @Published var image: UIImage?
-    var urlString: String?
+    var url: URL?
 
-    init(urlString: String?) {
-        self.urlString = urlString
+    init(url: URL?) {
+        self.url = url
         loadImage()
     }
 
@@ -37,11 +46,7 @@ class UrlImageModel: ObservableObject {
     }
 
     func loadImageFromUrl() {
-        guard let urlString = urlString else {
-            return
-        }
-
-        let url = URL(string: urlString)!
+        guard let url = url else { return }
         let task = URLSession.shared.dataTask(
             with: url,
             completionHandler: getImageFromResponse(data:response:error:)
@@ -65,16 +70,5 @@ class UrlImageModel: ObservableObject {
             }
             self.image = loadedImage
         }
-    }
-}
-
-struct ImageView_Previews: PreviewProvider {
-    static var previews: some View {
-        UrlImageView(urlString: "episode.mp3")
-            .frame(width: 30, height: 30, alignment: .center)
-            .previewLayout(.sizeThatFits)
-        UrlImageView(urlString: "episode.mp3")
-            .frame(width: 64, height: 64, alignment: .center)
-            .previewLayout(.sizeThatFits)
     }
 }

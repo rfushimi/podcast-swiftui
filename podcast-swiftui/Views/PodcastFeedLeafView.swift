@@ -10,8 +10,7 @@ import SwiftUI
 import SyndiKit
 
 struct PodcastDetailView: View {
-    @State var feed: PodcastFeed
-    @State var cancellables: Set<AnyCancellable> = []
+    @StateObject var feed: PodcastFeedObject
 
     var body: some View {
         VStack {
@@ -19,40 +18,25 @@ struct PodcastDetailView: View {
                 Text(feed.name)
                     .listRowSeparator(.hidden)
                     .frame(maxWidth: .infinity, alignment: .center)
-                UrlImageView(urlString: feed.feedURL?.absoluteString)
+                UrlImageView(imageURL: $feed.artworkURL)
                     .frame(width: 160, height: 160, alignment: .center)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .listRowSeparator(.hidden)
-                ForEach(feed.episodes) { episode in
-                    PodcastEpisodeCell(episode: episode)
-                }
-                Button("Refresh") {
-                    let fetcher = FeedFetcher()
-                    fetcher.fetchEpisodes(feedURL: feed.feedURL!)
-                        .sink(receiveCompletion: { completion in
-                            print(completion)
-                        }, receiveValue: { response in
-                            var episodes: [PodcastEpisode] = []
-                            for item in response.channel.item {
-                                var ep = PodcastEpisode(name: item.title,
-                                                        episodeURL: URL(string: item
-                                                            .enclosure.url),
-                                                        duration: Double(item.duration))
-                                ep.summary = item.summary.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression, range: nil)
-
-                                episodes.append(ep)
-                            }
-                            self.feed.episodes = episodes
-                        }).store(in: &cancellables)
-                }
-                Spacer()
-            }.listStyle(PlainListStyle())
-        }.environmentObject(AudioPlayer.shared)
+                ForEach($feed.episodes, content: { $episode in
+                    PodcastEpisodeCell(episode: $episode)
+                })
+            }
+            .listStyle(PlainListStyle())
+            .refreshable {
+                feed.refresh()
+            }
+            Spacer()
+        }
     }
 }
 
 struct PodcastEpisodeCell: View {
-    @State var episode: PodcastEpisode
+    @Binding var episode: PodcastEpisodeObject
     @EnvironmentObject var audioPlayer: AudioPlayer
 
     var body: some View {
@@ -67,42 +51,30 @@ struct PodcastEpisodeCell: View {
                     Spacer()
                 }
                 Text(episode.summary).lineLimit(3).font(.caption).foregroundColor(.gray)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
             }
-            PodcastPlayButton(episode: episode)
+            PodcastPlayButton(episode: episode).padding(6)
         }
     }
 }
 
 struct PodcastDetailView_Previews: PreviewProvider {
+    @State static var previewFeed = PodcastFeedObject(
+        name: "研エンの仲",
+        feedURL: URL(
+            fileURLWithPath: "podcast.rss"
+        ),
+        artworkURL: URL(fileURLWithPath: "artwork.png"),
+        episodes: Array(repeating: PodcastEpisodeObject(
+            name: "エピソードのタイトル",
+            episodeURL: URL(fileURLWithPath: "episode.mp3"),
+            duration: 1234,
+            summary: String(repeating: "Podcastの概要 ", count: 100)
+        ), count: 4)
+    )
     static var previews: some View {
-        PodcastDetailView(feed: PodcastFeed(
-            name: "研エンの仲",
-            feedURL: URL(
-                fileURLWithPath: "podcast.rss"
-            ),
-            artworkURL: URL(fileURLWithPath: "artwork.png"),
-            episodes: [
-                PodcastEpisode(name: "#0 Podcastを始めた理由について.mp3",
-                               episodeURL: URL(
-                                   fileURLWithPath: "episode.mp3"
-                               ),
-                               summary: "limitedBy はオプショナルの引数ですが、limitedBy を指定しないと、実在する index を超えた値を指定するとエラーになります。検索しないので、実在する index を超えた値を指定してもエラーになりません。"),
-                PodcastEpisode(name: "#0 Podcastを始めた理由について.mp3",
-                               episodeURL: URL(
-                                   fileURLWithPath: "episode.mp3"
-                               ),
-                               summary: "limitedBy はオプショナルの引数ですが、limitedBy を指定しないと、実在する index を超えた値を指定するとエラーになります。検索しないので、実在する index を超えた値を指定してもエラーになりません。"),
-                PodcastEpisode(name: "#0 Podcastを始めた理由について.mp3",
-                               episodeURL: URL(
-                                   fileURLWithPath: "episode.mp3"
-                               ),
-                               summary: "limitedBy はオプショナルの引数ですが、limitedBy を指定しないと、実在する index を超えた値を指定するとエラーになります。検索しないので、実在する index を超えた値を指定してもエラーになりません。"),
-                PodcastEpisode(name: "#0 Podcastを始めた理由について.mp3",
-                               episodeURL: URL(
-                                   fileURLWithPath: "episode.mp3"
-                               ),
-                               summary: "limitedBy はオプショナルの引数ですが、limitedBy を指定しないと、実在する index を超えた値を指定するとエラーになります。検索しないので、実在する index を超えた値を指定してもエラーになりません。"),
-            ]
-        ))
+        PodcastDetailView(feed: previewFeed)
+            .environmentObject(AudioPlayer.shared)
     }
 }

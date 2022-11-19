@@ -3,9 +3,9 @@ import SwiftUI
 
 struct PodcastPlayButton: View {
     @EnvironmentObject var audioPlayer: AudioPlayer
-    @State var episode: PodcastEpisode
+    @StateObject var episode: PodcastEpisodeObject
     var body: some View {
-        if audioPlayer.isPlaying && audioPlayer.currentEpisode == episode {
+        if audioPlayer.playerState == .playing && audioPlayer.currentEpisode == episode {
             Button(action: {
                 audioPlayer.pause()
             }) {
@@ -23,16 +23,20 @@ struct PodcastPlayButton: View {
 
 struct PodcastDurationText: View {
     @EnvironmentObject var audioPlayer: AudioPlayer
-    @State var episode: PodcastEpisode
+    @StateObject var episode: PodcastEpisodeObject
+    @State private var currentTime: Double = 0
 
     var body: some View {
         HStack {
             if let episode = episode {
                 if audioPlayer.currentEpisode == episode {
                     Text(
-                        "\(audioPlayer.currentTime.toDurationString()) / \(episode.duration.toDurationString())"
-                    ).font(.caption).foregroundColor(.gray)
-                    ProgressView(value: audioPlayer.currentTime, total: episode.duration).foregroundColor(.purple)
+                        "\(currentTime.toDurationString()) / \(episode.duration.toDurationString())"
+                    ).font(.caption).foregroundColor(.gray).onReceive(audioPlayer.currentTimeObserver.publisher) { time in
+                        currentTime = time
+                    }
+                    ProgressView(value: currentTime, total: episode.duration)
+                        .foregroundColor(.purple)
                     Spacer()
                 } else {
                     Text(
@@ -59,7 +63,7 @@ struct PodcastPlayerToolBar: View {
                         Text(currentEpisode.name).lineLimit(1)
                             .font(.subheadline)
                         Spacer()
-                        PodcastPlayButton(episode: currentEpisode)
+                        PodcastPlayButton(episode: currentEpisode).padding(4)
                     } else {
                         Text("Not Playing").disabled(true)
                         Spacer()
@@ -73,9 +77,8 @@ struct PodcastPlayerToolBar: View {
                         Spacer()
                     }
                 }
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .environmentObject(audioPlayer)
+                Spacer()
+            }.padding()
+        }.frame(maxWidth: .infinity)
     }
 }
